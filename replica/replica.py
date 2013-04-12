@@ -342,17 +342,29 @@ class ReplicationProvider(object):
 		self._device_list = device_list
 		self._replication_table = {}
 		self._miss_table = {}
-	
+
+	def get_storage_count(self, device):
+		count = 0
+		for key in device._replication_table.keys():
+			count += len(device._replication_table[key])
+		return count
+		
 	def simple_replicate(self, app):
 		'''We assume the replication will always success!'''
-		replication_factor = 2 #random.choice([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]) #TODO: adjustable from app usage.
+		replication_factor = 6 #random.choice([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]) #TODO: adjustable from app usage.
 		for slot in range(self._device_list['a05'].get_nchunks()):
 			d = [(self._device_list[device_id].status_provider.get_slot_ratio(slot), device_id)\
 					for device_id in self._device_list.keys()]
 			d = sorted(d, reverse=True)
 			
-			for f in range(replication_factor):
-				device = self._device_list[d[f][1]]	
+			f = 0
+			for i in range(len(d)):
+				device = self._device_list[d[i][1]]	
+				if self.get_storage_count(device) > 300:
+					continue
+				f += 1
+				if f >= replication_factor: 
+					break
 				device.replicate(app)	
 				# update the replication table.
 				if app['owner'] not in self._replication_table.keys():
@@ -496,17 +508,21 @@ class Simulator(object):
 			miss_tb = self._replication_provider.get_miss_table()
 			replica_tb = self._replication_provider.get_replication_table()
 			
-			for key in replica_tb[device_id]:
-				wr.writerow([len(replica_tb[device_id][key])])
+			if device_id in replica_tb.keys():	
+				for key in replica_tb[device_id].keys():
+					wr.writerow([len(replica_tb[device_id][key])])
 			
 			s0 = 0
 			s1 = 0
-			for key in miss_tb[device_id].keys():
-				print key, miss_tb[device_id][key], count_table[key], replica_tb[device_id][key]
-				s0 += miss_tb[device_id][key]
-				s1 += count_table[key]
-			print 'Avg Success Rate: %f' % (100.0 - s0*100.0/s1)
-			w2.writerow([(100.0 - s0*100.0/s1)])
+			if device_id in replica_tb.keys():
+				for key in miss_tb[device_id].keys():
+					if (key not in count_table.keys()) or (key not in replica_tb[device_id].keys()):
+						continue
+					#print key, miss_tb[device_id][key], count_table[key], replica_tb[device_id][key]
+					s0 += miss_tb[device_id][key]
+					s1 += count_table[key]
+				print 'Avg Success Rate: %f' % (100.0 - s0*100.0/s1)
+				w2.writerow([(100.0 - s0*100.0/s1)])
 			
 			storage_tb = self._device_list[device_id].get_storage_map()
 			tot_s = 0
