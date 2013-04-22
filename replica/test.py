@@ -85,6 +85,6 @@ if __name__ == '__main__':
 		'b10' : read_status('b10', '/home/jliao2/Documents/data-set/livelab/sleep/b10.csv'),
 		'b11' : read_status('b11', '/home/jliao2/Documents/data-set/livelab/sleep/b11.csv'),
 		}
-	sim = replica.Simulator(app_traces, status_traces, 60*60*4)
+	sim = replica.Simulator(app_traces, status_traces, 60*60*6)
 	sim.run()
 	

@@ -299,6 +299,14 @@ class AppUsageProvider(object):
 		self._usage_board[app['name']][ts_index] += 1
 		return self._usage_board
 	
+	def get_usage_frequency(self, app):
+		ts = datetime.datetime.fromtimestamp(app['timestamp'])
+		ts_index = (ts.second + ts.minute * 60 + ts.hour * 60 * 60)/self._time_slot
+		s = 0
+		for k in self._usage_board.keys():
+			s += self._usage_board[k][ts_index]
+		return self._usage_board[app['name']][ts_index]*1.0/s
+	
 	def get_phone_id(self):
 		return self._phone_id
 	
@@ -349,9 +357,9 @@ class ReplicationProvider(object):
 			count += len(device._replication_table[key])
 		return count
 		
-	def simple_replicate(self, app):
+	def simple_replicate(self, app, replication_factor=3):
 		'''We assume the replication will always success!'''
-		replication_factor = 6 #random.choice([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]) #TODO: adjustable from app usage.
+		#replication_factor = 12 #random.choice([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]) #TODO: adjustable from app usage.
 		for slot in range(self._device_list['a05'].get_nchunks()):
 			d = [(self._device_list[device_id].status_provider.get_slot_ratio(slot), device_id)\
 					for device_id in self._device_list.keys()]
@@ -360,12 +368,12 @@ class ReplicationProvider(object):
 			f = 0
 			for i in range(len(d)):
 				device = self._device_list[d[i][1]]	
-				if self.get_storage_count(device) > 300:
+				if self.get_storage_count(device) > 1000:
 					continue
 				f += 1
+				device.replicate(app)	
 				if f >= replication_factor: 
 					break
-				device.replicate(app)	
 				# update the replication table.
 				if app['owner'] not in self._replication_table.keys():
 					self._replication_table[app['owner']] = {}
@@ -489,6 +497,7 @@ class Simulator(object):
 		storage = csv.writer(open('storage.csv', 'wb'), delimiter=',')
 		for device_id in self._device_list.keys():
 			wr = csv.writer(open(device_id + '.csv', 'wb'), delimiter=',')
+			rp = csv.writer(open(device_id + '_replica.csv', 'wb'), delimiter=',')
 			#awta = csv.writer(open(device_id + '_awta.csv', 'wb'), delimiter=',')
 			print '========%s========' % device_id
 			device = self._device_list[device_id]
@@ -502,7 +511,11 @@ class Simulator(object):
 				if self._replication_provider.probe(app): continue
 				#awta.writerow([self._replication_provider.next_available_time(app)])
 				
-				self._replication_provider.simple_replicate(app)
+				# New model: calc replication factor from frequency.
+				f = device.app_usage_provider.get_usage_frequency(app)
+				r = 20.0/(1.0 + math.exp(-5.0*(f - 0.5)))
+				rp.writerow([r])
+				self._replication_provider.simple_replicate(app, replication_factor=math.ceil(3*r))
 				self._replication_provider.update_miss_table(app)
 			
 			miss_tb = self._replication_provider.get_miss_table()
