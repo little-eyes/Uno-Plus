@@ -5,10 +5,10 @@ while length(balance) < 21
     balance = [balance; 0];
 end
 %mean_balance = mean(balance)
-var_balance = std(balance)/max(balance)
+var_balance = std(balance)
 storage = load('storage.csv');
 %mean_storage = mean(storage)
-var_storage = std(storage)/max(storage)
+var_storage = std(storage)
 
 %ar = load('success.csv');
 %mean_ar = mean(ar)
@@ -96,13 +96,15 @@ var_storage = std(storage)/max(storage)
 t = [100 200 300 400 500 600 700 800 900 1000];
 %l = [27.11 25.10 25.28 24.78 23.36 23.05 24.70 27.07 25.59 26.11];
 %s = [16.19 26.81 40.40 44.15 34.50 29.01 29.20 29.38 29.37 29.36];
-l = [3.84 30.51 23.20 26.24 27.90 23.91 21.55 25.24 23.74 21.30];
-s = [13.61 25.13 29.98 34.64 38.59 40.38 42.63 42.42 44.05 41.16];
-plot(t, l, '-bs', 'linewidth', 2);
+%l = [3.84 30.51 23.20 26.24 27.90 23.91 21.55 25.24 23.74 21.30];
+%s = [13.61 25.13 29.98 34.64 38.59 40.38 42.63 42.42 44.05 41.16];
+l = [2206 3057 4604 5114 4684 4785 5139 5980 6491 6672];
+s = [16 54 121 177 172 174 204 235 265 293];
+plot(t, l/max(l), '-bs', 'linewidth', 2);
 hold on;
-plot(t, s, '-ro', 'linewidth', 2);
+plot(t, s/max(s), '-ro', 'linewidth', 2);
 set(gca, 'fontsize', 14);
 xlabel('Storage Budget');
-ylabel('Variance (%)');
+ylabel('Normalized Variance (%)');
 legend('Load Balance', 'Storage Balance');
 grid on;

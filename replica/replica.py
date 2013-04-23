@@ -515,7 +515,7 @@ class Simulator(object):
 				f = device.app_usage_provider.get_usage_frequency(app)
 				r = 20.0/(1.0 + math.exp(-5.0*(f - 0.5)))
 				rp.writerow([r])
-				self._replication_provider.simple_replicate(app, replication_factor=math.ceil(3*r))
+				self._replication_provider.simple_replicate(app, replication_factor=math.ceil(r))
 				self._replication_provider.update_miss_table(app)
 			
 			miss_tb = self._replication_provider.get_miss_table()
